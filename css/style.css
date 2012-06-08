@@ -1,3 +1,6 @@
+body {
+  background-image:url('../img/lightpaperfibers.png');
+}
 
 rect.total-duration {
   fill: none;

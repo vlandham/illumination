@@ -92,6 +92,8 @@ BarCharts = () ->
       .attr("dx", -5)
       .attr("dy", (barHeight / 2) + 5)
       .text((d) -> d.id)
+      .on("click", (d) -> root.showFlowcell(d))
+      .attr("cursor", "pointer")
 
     now = moment()
     b.append("text")
@@ -201,24 +203,46 @@ Histogram = () ->
 
     hEnter = newBars.enter()
     hEnter.append("rect")
-      .attr("class", "histo")
-      .attr("x", (d) -> xScale(d.x))
+    g = hEnter.append("g")
+      .attr("class", "histo-g")
+      .attr("transform", (d) -> "translate(#{xScale(d.x)},0)")
+      .on("mouseover", (d) -> showDetails(d,this))
+      .on("mouseout", (d) -> hideDetails(d,this))
+      .on("click", (d) -> root.filterFlowcells(d))
+
+    g.append("rect").attr("class", "histo")
       .attr("y", (d) -> height - yScale(d.y))
       .attr("width", xScale.rangeBand())
       .attr("height", (d) -> yScale(d.y))
-      .on("mouseover", (d) -> console.log(d.map((e) -> Math.round(e/60))))
 
-    hEnter.append("text")
+    g.append("text")
       .attr("text-anchor", "middle")
-      .attr("x", (d) -> xScale(d.x))
       .attr("dx", xScale.rangeBand() / 2)
       .attr("y", height)
       .attr("dy", -5)
       .attr("fill", "white")
       .text((d) -> if d.length then (Math.round((d3.sum(d) / d.length) / 60)) else null)
 
+  showDetails = (d,el) ->
+    d3.select(el).append("text")
+      .attr("dx", xScale.rangeBand() / 2)
+      .attr("text-anchor", "middle")
+      .attr("y", (d) -> height - yScale(d.y))
+      .attr("dy", (d) -> if d.y < 2 then -5 else 15)
+      .attr("fill", (d) -> if d.y < 2 then "black" else "white")
+      .text((d) -> d.y)
+
+  hideDetails = (d,el) ->
+    dd = d
+
 
   return chart
+
+root.showFlowcell = (flowcell_data) ->
+  console.log(flowcell_data)
+
+root.filterFlowcells = (flowcells) ->
+  console.log(flowcells)
 
 root.plotData = (selector, data, plot) ->
   d3.select(selector)
