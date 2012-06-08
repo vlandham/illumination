@@ -56,15 +56,12 @@ BarCharts = () ->
   chart = (selection) ->
     selection.each (rawData) ->
       data = rawData
-      height = data.length * (barHeight + barMargin)
 
-      xMax = d3.max(data, (datum) -> datum.duration )
-      xScale.domain([0, xMax]).range([0,width])
+      update_scales()
 
       svg = d3.select(this).selectAll("svg").data([data])
+      update_dimensions()
       gEnter = svg.enter().append("svg").append("g")
-      svg.attr("width", width + margin.left + margin.right )
-      svg.attr("height", height + margin.top + margin.bottom )
 
       baseG = svg.select("g")
         .attr("transform", "translate(#{margin.left},#{margin.top})")
@@ -75,15 +72,56 @@ BarCharts = () ->
 
       chart.update()
 
+  update_scales = () ->
+
+    xMax = d3.max(data, (datum) -> datum.duration )
+    xScale.domain([0, xMax]).range([0,width])
+
+  update_dimensions = () ->
+    height = (data.length + 1) * (barHeight + barMargin)
+
+    svg.attr("width", width + margin.left + margin.right )
+
+    svg.transition()
+      .duration(1000)
+      .attr("height", height + margin.top + margin.bottom )
 
   chart.update = () ->
-    newBars = bars.selectAll(".bar")
-      .data(data)
+    update_scales()
+    update_dimensions()
+    allBars = bars.selectAll(".bar")
+      .data(data, (d) -> d.id)
 
-    newBars.exit().remove()
+    # remove
+    allBars.exit().remove()
 
-    b = newBars.enter().append("g")
+    # existing
+    t = allBars.transition()
+    t.duration(800)
+      .attr("transform", (d,i) -> "translate(#{0},#{i * (barHeight + barMargin)})")
+
+    allBars.each (bd) ->
+      tcurrentX = 0
+      t.selectAll("rect").each (rd) ->
+        d3.select(this).transition().duration(500).attr("x", tcurrentX)
+        tcurrentX = tcurrentX += xScale(rd.duration)
+
+    t.selectAll("rect").transition()
+      .duration(500).delay(500)
+      .attr("width", (d) -> xScale(d.duration))
+
+    t.select(".flowcell-time").transition()
+      .duration(500)
+      .attr("x", (d) -> xScale(d.duration))
+
+    # t.select(".total-duration").transition()
+    #   .duration(500)
+    #   .attr("width", (d) -> xScale(d.duration))
+
+    # new
+    b = allBars.enter().append("g")
       .attr("class", "bar")
+    b.transition().duration((d,i) -> 50 * i)
       .attr("transform", (d,i) -> "translate(#{0},#{i * (barHeight + barMargin)})")
 
     b.append("text")
@@ -103,11 +141,11 @@ BarCharts = () ->
       .attr("dy", (barHeight) - 3)
       .text((d) -> d.start_moment.from(now))
 
-    b.append("rect")
-      .attr("class", "total-duration")
-      .attr("x",0)
-      .attr("height", barHeight)
-      .attr("width", (d) -> xScale(d.duration))
+    # b.append("rect")
+    #   .attr("class", "total-duration")
+    #   .attr("x",0)
+    #   .attr("height", barHeight)
+    #   .attr("width", (d) -> xScale(d.duration))
 
     b.append("text")
       .attr("class", "flowcell-time")
@@ -123,6 +161,8 @@ BarCharts = () ->
       .attr("width", (d) -> xScale(d.duration))
       .attr("x", 0)
       .attr("fill", (d) -> colorScale(d.type))
+      .on("click", (d) -> console.log(d.message))
+
 
     # hack to make them stack
     # until i think of a better way
@@ -133,7 +173,15 @@ BarCharts = () ->
         currentX = currentX += xScale(rd.duration)
 
     # key = svg.append("g").id("vis-key")
+    
+  chart.data = (_) ->
+    if !arguments.length
+      return data
+    data = _
+    chart
 
+  chart.replace = (new_data) ->
+    chart.data(new_data).update()
 
   return chart
 
@@ -196,12 +244,12 @@ Histogram = () ->
       .range([0, height])
   
 
-    newBars = histogramG.selectAll(".histo")
+    allBars = histogramG.selectAll(".histo")
       .data(histogram)
 
-    newBars.exit().remove()
+    allBars.exit().remove()
 
-    hEnter = newBars.enter()
+    hEnter = allBars.enter()
     hEnter.append("rect")
     g = hEnter.append("g")
       .attr("class", "histo-g")
@@ -238,8 +286,18 @@ Histogram = () ->
 
   return chart
 
+plot  = null
+data = []
+
+root.reset = () ->
+  console.log('reset')
+  plot.replace(data)
+  $("#all-link").css("display", "none")
+
 root.showFlowcell = (flowcell_data) ->
-  console.log(flowcell_data)
+  plot.replace([flowcell_data])
+  $("#all-link").css("display", "block")
+  # d3.select("#all-link").on("click", root.reset())
 
 root.filterFlowcells = (flowcells) ->
   console.log(flowcells)
@@ -251,7 +309,6 @@ root.plotData = (selector, data, plot) ->
 
 render_vis = (json) ->
   data = parse(json)
-  console.log(data)
   plot = BarCharts()
   root.plotData("#vis", data, plot)
   histogram = Histogram()
@@ -264,3 +321,4 @@ render_vis = (json) ->
   $("#avg-stat").html("#{durations_avg} hours")
 $ ->
   d3.json "flowcells.json", render_vis
+  d3.select("#all-link").on("click", root.reset)
