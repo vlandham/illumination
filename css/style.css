@@ -1,0 +1,19 @@
+
+rect.total-duration {
+  fill: none;
+  stroke-width: 4px;
+  stroke: #eee;
+  stroke-dasharray: 2 2;
+
+}
+
+rect.histo {
+  fill: steelblue;
+  stroke: white;
+}
+
+.flowcell-date {
+  fill: #999;
+  font-size:10px;
+}
+

@@ -1,0 +1,50 @@
+
+body {
+  background: #dedede url('/images/bg1.jpg'); 
+}
+
+h1,h2 {
+  text-align:center;
+}
+
+#current_flowcell {
+}
+
+#current_flowcell h2 {
+  padding-bottom: 30px;
+}
+
+#wrapper {
+  width:940px;
+  margin:auto;
+}
+
+img#logo {
+  display:block;
+  margin:auto;
+  padding:0;
+  text-align: center;
+}
+
+#flowcells {
+}
+
+#flowcells rect {
+  fill: orange;
+}
+
+#flowcells rect.active {
+  fill: green;
+}
+
+#flowcells rect.flowcell-bubble {
+  opacity: 0.8;
+}
+
+#flowcells text.flowcell-time {
+  fill: white;
+}
+
+.flowcell-bubble {
+  fill: red;
+}
